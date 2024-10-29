@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { TextField, Button, Grid, Typography, Container } from '@mui/material';
-import axios from 'axios'; // Ensure axios is imported
-import { toast } from 'react-toastify'; // Ensure toast is imported
+import { TextField, Button, Grid, Typography, Container, Paper } from '@mui/material';
+import axios from 'axios'; 
+import { toast } from 'react-toastify'; 
 import { baseUrl } from '../utils';
 
 const ContentForm = () => {
@@ -33,52 +33,57 @@ const ContentForm = () => {
 
     return (
         <Container maxWidth="sm">
-            <Typography variant="h4" gutterBottom>
-                Add Content
-            </Typography>
-            <form onSubmit={handleSubmit}>
-                <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            id="title"
-                            label="Title"
-                            variant="outlined"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                        />
+            <Paper elevation={3} style={{ padding: '2rem', borderRadius: '8px' }}>
+                <Typography variant="h4" align="center" gutterBottom>
+                    Add Content
+                </Typography>
+                <form onSubmit={handleSubmit}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                id="title"
+                                label="Title"
+                                variant="outlined"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                required
+                                inputProps={{ style: { padding: '10px' } }} // Increase padding for a better look
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                id="content"
+                                label="Content"
+                                variant="outlined"
+                                multiline
+                                rows={4}
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                required
+                                inputProps={{ style: { padding: '10px' } }} // Increase padding for a better look
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                id="output"
+                                label="Output"
+                                variant="outlined"
+                                value={output}
+                                onChange={(e) => setOutput(e.target.value)}
+                                inputProps={{ style: { padding: '10px' } }} // Increase padding for a better look
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Button type="submit" variant="contained" color="primary" fullWidth>
+                                Submit
+                            </Button>
+                        </Grid>
                     </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            id="content"
-                            label="Content"
-                            variant="outlined"
-                            multiline
-                            rows={4}
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            required
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            id="output"
-                            label="Output"
-                            variant="outlined"
-                            value={output}
-                            onChange={(e) => setOutput(e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button type="submit" variant="contained" color="primary" fullWidth>
-                            Submit
-                        </Button>
-                    </Grid>
-                </Grid>
-            </form>
+                </form>
+            </Paper>
         </Container>
     );
 };
