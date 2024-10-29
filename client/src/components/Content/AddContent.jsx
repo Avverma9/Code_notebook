@@ -3,16 +3,12 @@ import { TextField, Button, Grid, Typography, Container } from '@mui/material';
 import axios from 'axios'; // Ensure axios is imported
 import { toast } from 'react-toastify'; // Ensure toast is imported
 import { baseUrl } from '../../../utils';
-import { useLocation } from 'react-router-dom';
 
 const ContentForm = () => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [output, setOutput] = useState('');
-    const location = useLocation();
-    if (location.pathname !== '/add-notes') {
-        return null;
-    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
