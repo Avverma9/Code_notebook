@@ -1,5 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Button, Paper, CircularProgress, Tooltip, IconButton, Snackbar, Alert } from '@mui/material';
+import {
+    Box,
+    Typography,
+    Button,
+    Paper,
+    CircularProgress,
+    Tooltip,
+    IconButton,
+    Snackbar,
+    Alert,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+} from '@mui/material';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import PropTypes from 'prop-types';
@@ -10,9 +25,9 @@ import FileCopyIcon from '@mui/icons-material/FileCopy';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios'; // Ensure axios is imported
 import { toast } from 'react-toastify'; // Ensure toast is imported
-import { baseUrl } from '../../../utils';
+import { baseUrl } from '../utils';
 
-const Content = ({ bookData }) => {
+const Content = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const [data, setData] = useState([]); // Define data state
     const [loading, setLoading] = useState(false);
@@ -20,44 +35,49 @@ const Content = ({ bookData }) => {
     const location = useLocation();
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState(null);
 
-    // Determine which data to display
-    const displayData = bookData && bookData.length > 0 ? bookData : data;
-
+    // Fetch data on mount
     useEffect(() => {
         const fetchData = async () => {
-            if (!bookData) {
-                setLoading(true);
-                try {
-                    const response = await axios.get(`${baseUrl}/javascript/v1/get-content`);
-                    setData(response.data); // Store fetched data
-                } catch (error) {
-                    setError(error.response ? error.response.data : 'An error occurred');
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                setCurrentPage(0); // Reset page if bookData is provided
+            setLoading(true);
+            try {
+                const response = await axios.get(`${baseUrl}/javascript/v1/get-content`);
+                setData(response.data); // Store fetched data
+            } catch (error) {
+                setError(error.response ? error.response.data : 'An error occurred');
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchData();
-    }, [bookData]);
+    }, []);
 
-    const handleDelete = async (id) => {
-        try {
-            const response = await axios.delete(`${baseUrl}/javascript/v1/delete-content/${id}`);
-            if (response.status === 200) {
-                toast.success('Deleted');
-                setData((prevData) => prevData.filter((item) => item._id !== id)); // Update state to remove deleted item
-                if (currentPage > 0 && displayData.length === 1) {
-                    setCurrentPage(currentPage - 1);
-                } else {
-                    setCurrentPage(0);
+    const handleDeleteOpen = (id) => {
+        setDeleteId(id);
+        setDialogOpen(true);
+    };
+
+    const handleDeleteClose = () => {
+        setDialogOpen(false);
+        setDeleteId(null);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (deleteId) {
+            try {
+                const response = await axios.delete(`${baseUrl}/javascript/v1/delete-content/${deleteId}`);
+                if (response.status === 200) {
+                    toast.success('Deleted');
+                    setData((prevData) => prevData.filter((item) => item._id !== deleteId)); // Update state to remove deleted item
                 }
+            } catch (error) {
+                setError(error.response ? error.response.data : 'An error occurred');
+            } finally {
+                handleDeleteClose();
             }
-        } catch (error) {
-            setError(error.response ? error.response.data : 'An error occurred');
         }
     };
 
@@ -68,7 +88,7 @@ const Content = ({ bookData }) => {
     }
 
     const handleNextPage = () => {
-        if (currentPage < displayData.length - 1) {
+        if (currentPage < data.length - 1) {
             setCurrentPage(currentPage + 1);
         }
     };
@@ -81,7 +101,7 @@ const Content = ({ bookData }) => {
 
     const handleCopy = () => {
         navigator.clipboard
-            .writeText(displayData[currentPage]?.content || '')
+            .writeText(data[currentPage]?.content || '')
             .then(() => {
                 setSnackbarMessage('Code copied to clipboard!');
                 setSnackbarOpen(true);
@@ -119,7 +139,7 @@ const Content = ({ bookData }) => {
         );
     }
 
-    if (!displayData || displayData.length === 0) {
+    if (!data || data.length === 0) {
         return (
             <Box sx={{ textAlign: 'center', padding: 4 }}>
                 <Typography variant="h6" color="textSecondary">
@@ -135,18 +155,22 @@ const Content = ({ bookData }) => {
             sx={{
                 maxWidth: { xs: '90%', sm: '800px' },
                 margin: 'auto',
-                marginTop: '50px',
                 borderRadius: 4,
                 boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
                 position: 'relative',
             }}
         >
-            <IconButton sx={{ position: 'absolute', top: 16, right: 16 }} onClick={handleCopy} aria-label="Copy code">
-                <FileCopyIcon />
-            </IconButton>
-            <Typography variant="h4" gutterBottom sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1976d2' }}>
-                {displayData[currentPage]?.title}
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 2 }}>
+                <Tooltip title="Delete this content" arrow>
+                    <IconButton onClick={() => handleDeleteOpen(data[currentPage]._id)} aria-label="Delete">
+                        <DeleteIcon />
+                    </IconButton>
+                </Tooltip>
+               <h3> {data[currentPage]?.title}</h3>
+                <IconButton onClick={handleCopy} aria-label="Copy code">
+                    <FileCopyIcon />
+                </IconButton>
+            </Box>
             <Box
                 sx={{
                     overflow: 'hidden',
@@ -154,6 +178,8 @@ const Content = ({ bookData }) => {
                     borderRadius: 2,
                     backgroundColor: '#f5f5f5',
                     boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+                    height: '450px', // Set a fixed height
+                    overflowY: 'auto', // Allow vertical scrolling
                 }}
             >
                 <SyntaxHighlighter
@@ -165,31 +191,15 @@ const Content = ({ bookData }) => {
                         wordWrap: 'break-word',
                     }}
                 >
-                    {displayData[currentPage]?.content}
+                    {data[currentPage]?.content}
                 </SyntaxHighlighter>
             </Box>
+
             <Typography variant="body1" color="textSecondary" sx={{ marginBottom: 2 }}>
-                Output: <strong>{displayData[currentPage]?.output}</strong>
+                Output: <strong>{data[currentPage]?.output}</strong>
             </Typography>
 
-            <Tooltip title="Delete this content" arrow>
-                <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => handleDelete(displayData[currentPage]._id)}
-                    startIcon={<DeleteIcon />}
-                    sx={{
-                        marginBottom: 2,
-                        '&:hover': {
-                            backgroundColor: '#d32f2f',
-                        },
-                    }}
-                >
-                    Delete
-                </Button>
-            </Tooltip>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between',  }}>
                 <Tooltip title="Previous page" arrow>
                     <Button
                         variant="outlined"
@@ -214,7 +224,7 @@ const Content = ({ bookData }) => {
                         variant="contained"
                         color="primary"
                         onClick={handleNextPage}
-                        disabled={currentPage === displayData.length - 1}
+                        disabled={currentPage === data.length - 1}
                         aria-label="Next page"
                         endIcon={<NavigateNextIcon />}
                         sx={{
@@ -248,6 +258,22 @@ const Content = ({ bookData }) => {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+
+            {/* Confirmation Dialog */}
+            <Dialog open={dialogOpen} onClose={handleDeleteClose}>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>Are you sure you want to delete this content? This action cannot be undone.</DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteClose} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleDeleteConfirm} color="error">
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Paper>
     );
 };

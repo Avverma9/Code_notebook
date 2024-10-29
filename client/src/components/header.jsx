@@ -10,9 +10,10 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Ensure axios is imported
-import { baseUrl } from '../../../utils';
+import { baseUrl } from '../utils';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import BookDetailsModal from './modal';
 
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
@@ -67,37 +68,35 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function SearchAppBar() {
-    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredData, setFilteredData] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
     const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedBook, setSelectedBook] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await axios.get(`${baseUrl}/javascript/v1/get-content`);
                 setData(response.data);
-                setLoading(false);
             } catch (error) {
-                setError(error.response ? error.response.data : 'An error occurred');
-                setLoading(false);
+                toast.error(error.response ? error.response.data : 'An error occurred');
             }
         };
         fetchData();
     }, []);
 
     useEffect(() => {
-        if (data.length > 0) {
+        if (data) {
             const results = data.filter((item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
             setFilteredData(results);
         }
     }, [searchQuery, data]);
 
-    const handleSuggestionClick = (book) => {
-        navigate('/view-search-data', { state: { book } });
+    const handleSuggestionClick = (bookData) => {
+        setSelectedBook(bookData);
+        setModalOpen(true);
         setSearchQuery('');
     };
 
@@ -107,6 +106,11 @@ export default function SearchAppBar() {
 
     const handleMenuClose = () => {
         setAnchorEl(null);
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setSelectedBook(null);
     };
 
     return (
@@ -126,16 +130,7 @@ export default function SearchAppBar() {
                     <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
                         NoteBook
                     </Typography>
-                    {loading && (
-                        <Typography variant="body1" color="inherit">
-                            Loading...
-                        </Typography>
-                    )}
-                    {error && (
-                        <Typography variant="body1" color="error">
-                            Error: {error}
-                        </Typography>
-                    )}
+
                     <Search>
                         <SearchIconWrapper>
                             <SearchIcon />
@@ -171,6 +166,7 @@ export default function SearchAppBar() {
                     Home
                 </MenuItem>
             </Menu>
+            <BookDetailsModal open={modalOpen} onClose={handleCloseModal} bookData={selectedBook} />
         </Box>
     );
 }
