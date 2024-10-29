@@ -16,7 +16,7 @@ export const addContent = createAsyncThunk('content/addContent', async (data, { 
     try {
         const response = await axios.post(`${baseUrl}/javascript/v1/push-content`, data);
         if (response.status === 201) {
-            toast.success('Added data');
+            toast.success('Added');
         }
         return response.data;
     } catch (error) {
@@ -26,8 +26,8 @@ export const addContent = createAsyncThunk('content/addContent', async (data, { 
 export const deleteContent = createAsyncThunk('content/fetchContent', async (id, { rejectWithValue }) => {
     try {
         const response = await axios.delete(`${baseUrl}/javascript/v1/delete-content/${id}`);
-        if (response.status === 201) {
-            toast.success('Deleted data');
+        if (response.status === 200) {
+            toast.success('Deleted');
         }
     } catch (error) {
         return rejectWithValue(error.response ? error.response.data : 'An error occurred');

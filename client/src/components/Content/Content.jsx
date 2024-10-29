@@ -19,28 +19,21 @@ const Content = ({ bookData }) => {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
 
-    // Determine which data to display
     const displayData = bookData && bookData.length > 0 ? bookData : data;
 
     useEffect(() => {
-        // Fetch content only if bookData is not provided
         if (!bookData) {
             dispatch(fetchContent());
         } else {
-            // If bookData is received, reset the current page
             setCurrentPage(0);
         }
     }, [dispatch, bookData]);
 
     const handleDelete = async (id) => {
         await dispatch(deleteContent(id));
-        // Adjust current page after deletion
-        if (currentPage > 0 && displayData.length === 1) {
-            setCurrentPage(currentPage - 1);
-        } else {
-            setCurrentPage(0);
-        }
+        await dispatch(fetchContent());
     };
+
     const path = location.pathname;
 
     if (path !== '/' && path !== '/view-search-data') {
@@ -215,7 +208,6 @@ const Content = ({ bookData }) => {
                 autoHideDuration={3000}
                 onClose={handleSnackbarClose}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-                sx={{ backgroundColor: 'transparent' }}
             >
                 <Alert
                     onClose={handleSnackbarClose}
