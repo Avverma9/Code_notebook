@@ -3,35 +3,62 @@ import { Box, Typography, Button, Paper, CircularProgress, Tooltip, IconButton, 
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import PropTypes from 'prop-types';
-import { useDispatch, useSelector } from 'react-redux';
-import { deleteContent, fetchContent } from '../../redux/reducers/Content';
 import DeleteIcon from '@mui/icons-material/Delete';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import { useLocation } from 'react-router-dom';
+import axios from 'axios'; // Ensure axios is imported
+import { toast } from 'react-toastify'; // Ensure toast is imported
+import { baseUrl } from '../../../utils';
 
 const Content = ({ bookData }) => {
     const [currentPage, setCurrentPage] = useState(0);
-    const dispatch = useDispatch();
-    const { data, loading, error } = useSelector((state) => state.content);
+    const [data, setData] = useState([]); // Define data state
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const location = useLocation();
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
 
+    // Determine which data to display
     const displayData = bookData && bookData.length > 0 ? bookData : data;
 
     useEffect(() => {
-        if (!bookData) {
-            dispatch(fetchContent());
-        } else {
-            setCurrentPage(0);
-        }
-    }, [dispatch, bookData]);
+        const fetchData = async () => {
+            if (!bookData) {
+                setLoading(true);
+                try {
+                    const response = await axios.get(`${baseUrl}/javascript/v1/get-content`);
+                    setData(response.data); // Store fetched data
+                } catch (error) {
+                    setError(error.response ? error.response.data : 'An error occurred');
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                setCurrentPage(0); // Reset page if bookData is provided
+            }
+        };
+
+        fetchData();
+    }, [bookData]);
 
     const handleDelete = async (id) => {
-        await dispatch(deleteContent(id));
-        await dispatch(fetchContent());
+        try {
+            const response = await axios.delete(`${baseUrl}/javascript/v1/delete-content/${id}`);
+            if (response.status === 200) {
+                toast.success('Deleted');
+                setData((prevData) => prevData.filter((item) => item._id !== id)); // Update state to remove deleted item
+                if (currentPage > 0 && displayData.length === 1) {
+                    setCurrentPage(currentPage - 1);
+                } else {
+                    setCurrentPage(0);
+                }
+            }
+        } catch (error) {
+            setError(error.response ? error.response.data : 'An error occurred');
+        }
     };
 
     const path = location.pathname;
@@ -71,7 +98,7 @@ const Content = ({ bookData }) => {
         setSnackbarOpen(false);
     };
 
-    if (loading && !bookData) {
+    if (loading) {
         return (
             <Box sx={{ textAlign: 'center', padding: 4 }}>
                 <CircularProgress />
@@ -82,11 +109,11 @@ const Content = ({ bookData }) => {
         );
     }
 
-    if (error && !bookData) {
+    if (error) {
         return (
             <Box sx={{ textAlign: 'center', padding: 4 }}>
                 <Typography variant="h6" color="error">
-                    Error loading content: {error.message}
+                    Error loading content: {error}
                 </Typography>
             </Box>
         );
@@ -208,6 +235,7 @@ const Content = ({ bookData }) => {
                 autoHideDuration={3000}
                 onClose={handleSnackbarClose}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                sx={{ backgroundColor: 'transparent' }}
             >
                 <Alert
                     onClose={handleSnackbarClose}

@@ -1,24 +1,34 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { addContent } from '../../redux/reducers/Content';
 import { TextField, Button, Grid, Typography, Container } from '@mui/material';
+import axios from 'axios'; // Ensure axios is imported
+import { toast } from 'react-toastify'; // Ensure toast is imported
+import { baseUrl } from '../../../utils';
 
 const ContentForm = () => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [output, setOutput] = useState('');
-    const dispatch = useDispatch();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Dispatch the addContent action with the form data
-        dispatch(addContent({ title, content, output }));
+        try {
+            const response = await axios.post(`${baseUrl}/javascript/v1/push-content`, {
+                title,
+                content,
+                output,
+            });
+            if (response.status === 201) {
+                toast.success('Content added successfully!');
 
-        // Reset the form fields after submission
-        setTitle('');
-        setContent('');
-        setOutput('');
+                // Reset the form fields after successful submission
+                setTitle('');
+                setContent('');
+                setOutput('');
+            }
+        } catch (error) {
+            toast.error(error.response ? error.response.data : 'An error occurred');
+        }
     };
 
     return (

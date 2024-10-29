@@ -10,9 +10,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchContent } from '../../redux/reducers/Content';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Ensure axios is imported
+import { baseUrl } from '../../../utils';
 
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
@@ -67,26 +67,36 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function SearchAppBar() {
-    const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { data, loading, error } = useSelector((state) => state.content);
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredData, setFilteredData] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     useEffect(() => {
-        dispatch(fetchContent());
-    }, [dispatch]);
+        const fetchData = async () => {
+            try {
+                const response = await axios.get(`${baseUrl}/javascript/v1/get-content`);
+                setData(response.data);
+                setLoading(false);
+            } catch (error) {
+                setError(error.response ? error.response.data : 'An error occurred');
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     useEffect(() => {
-        if (data) {
+        if (data.length > 0) {
             const results = data.filter((item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
             setFilteredData(results);
         }
     }, [searchQuery, data]);
 
     const handleSuggestionClick = (book) => {
-        // Navigate to the new route with the selected book data
         navigate('/view-search-data', { state: { book } });
         setSearchQuery('');
     };
