@@ -33,12 +33,16 @@ const Search = styled('div')(({ theme }) => ({
 const Suggestions = styled('div')(({ theme }) => ({
     position: 'absolute',
     backgroundColor: theme.palette.background.paper,
-    boxShadow: theme.shadows[2],
+    boxShadow: theme.shadows[4],
     borderRadius: theme.shape.borderRadius,
     zIndex: 1,
     width: '100%',
-    maxHeight: '200px',
+    maxHeight: '250px',
     overflowY: 'auto',
+    marginTop: theme.spacing(1),
+    '&:hover': {
+        backgroundColor: alpha(theme.palette.common.white, 0.15),
+    },
 }));
 
 const SearchIconWrapper = styled('div')(({ theme }) => ({
@@ -58,10 +62,12 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
         padding: theme.spacing(1, 1, 1, 0),
         paddingLeft: `calc(1em + ${theme.spacing(4)})`,
         transition: theme.transitions.create('width'),
+        borderRadius: 20,
+        backgroundColor: alpha(theme.palette.common.white, 0.2),
         [theme.breakpoints.up('sm')]: {
-            width: '12ch',
+            width: '20ch',
             '&:focus': {
-                width: '20ch',
+                width: '28ch',
             },
         },
     },
@@ -115,7 +121,7 @@ export default function SearchAppBar() {
 
     return (
         <Box sx={{ flexGrow: 1 }}>
-            <AppBar position="static">
+            <AppBar position="sticky" sx={{ backgroundColor: '#1a2027', boxShadow: 4 }}>
                 <Toolbar>
                     <IconButton
                         size="large"
@@ -128,7 +134,7 @@ export default function SearchAppBar() {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                        NoteBook
+                        Code Book
                     </Typography>
 
                     <Search>
@@ -147,7 +153,14 @@ export default function SearchAppBar() {
                                     <Typography
                                         key={item._id}
                                         variant="body2"
-                                        sx={{ padding: '8px', cursor: 'pointer', color: 'black' }}
+                                        sx={{
+                                            padding: '12px',
+                                            cursor: 'pointer',
+                                            color: 'black',
+                                            '&:hover': {
+                                                backgroundColor: alpha('#1976d2', 0.1),
+                                            },
+                                        }}
                                         onClick={() => handleSuggestionClick(item)}
                                     >
                                         {item.title}

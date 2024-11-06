@@ -17,35 +17,38 @@ import {
 } from '@mui/material';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import PropTypes from 'prop-types';
 import DeleteIcon from '@mui/icons-material/Delete';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
-import { useLocation } from 'react-router-dom';
-import axios from 'axios'; // Ensure axios is imported
-import { toast } from 'react-toastify'; // Ensure toast is imported
+import axios from 'axios';
+import { toast } from 'react-toastify';
 import { baseUrl } from '../utils';
+import { useNavigate } from 'react-router-dom';
 
 const Content = () => {
-    const [currentPage, setCurrentPage] = useState(0);
-    const [data, setData] = useState([]); // Define data state
+    const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const location = useLocation();
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
+    const navigate = useNavigate();
 
-    // Fetch data on mount
+    // Function to go back to the previous page
+    const goBack = () => {
+        navigate(-1);
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await axios.get(`${baseUrl}/javascript/v1/get-content`);
-                setData(response.data); // Store fetched data
+                // Get the query from sessionStorage and decode it
+                const query = decodeURIComponent(sessionStorage.getItem('query')); // Decoding %20 to space
+                const response = await axios.get(`${baseUrl}/javascript/v1/get-content/by/title?title=${query}`);
+                setData(response.data);
             } catch (error) {
+                console.error('Error fetching data:', error);
                 setError(error.response ? error.response.data : 'An error occurred');
             } finally {
                 setLoading(false);
@@ -53,7 +56,7 @@ const Content = () => {
         };
 
         fetchData();
-    }, []);
+    }, []); // Only run once when the component mounts
 
     const handleDeleteOpen = (id) => {
         setDeleteId(id);
@@ -71,7 +74,7 @@ const Content = () => {
                 const response = await axios.delete(`${baseUrl}/javascript/v1/delete-content/${deleteId}`);
                 if (response.status === 200) {
                     toast.success('Deleted');
-                    setData((prevData) => prevData.filter((item) => item._id !== deleteId)); // Update state to remove deleted item
+                    setData((prevData) => prevData.filter((item) => item._id !== deleteId));
                 }
             } catch (error) {
                 setError(error.response ? error.response.data : 'An error occurred');
@@ -81,27 +84,10 @@ const Content = () => {
         }
     };
 
-    const path = location.pathname;
-
-    if (path !== '/' && path !== '/view-search-data') {
-        return null; // Render nothing if not on the correct path
-    }
-
-    const handleNextPage = () => {
-        if (currentPage < data.length - 1) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const handlePrevPage = () => {
-        if (currentPage > 0) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
     const handleCopy = () => {
+        const contentToCopy = data?.content || '';
         navigator.clipboard
-            .writeText(data[currentPage]?.content || '')
+            .writeText(contentToCopy)
             .then(() => {
                 setSnackbarMessage('Code copied to clipboard!');
                 setSnackbarOpen(true);
@@ -139,16 +125,6 @@ const Content = () => {
         );
     }
 
-    if (!data || data.length === 0) {
-        return (
-            <Box sx={{ textAlign: 'center', padding: 4 }}>
-                <Typography variant="h6" color="textSecondary">
-                    No content available.
-                </Typography>
-            </Box>
-        );
-    }
-
     return (
         <Paper
             elevation={6}
@@ -158,19 +134,41 @@ const Content = () => {
                 borderRadius: 4,
                 boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
                 position: 'relative',
+                padding: 2,
             }}
         >
+            {/* Go Back Button */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 2 }}>
+                <Button
+                    onClick={goBack}
+                    variant="outlined"
+                    color="primary"
+                    sx={{
+                        marginRight: 2, // Adds spacing to the right of the button
+                        fontWeight: 600,
+                        padding: '8px 16px', // Adds padding for a better click area
+                        borderRadius: 4, // Rounded corners for the button
+                    }}
+                >
+                    Go Back
+                </Button>
+            </Box>
+
+            {/* Content Section */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 2 }}>
                 <Tooltip title="Delete this content" arrow>
-                    <IconButton onClick={() => handleDeleteOpen(data[currentPage]._id)} aria-label="Delete">
+                    <IconButton onClick={() => handleDeleteOpen(data._id)} aria-label="Delete">
                         <DeleteIcon />
                     </IconButton>
                 </Tooltip>
-               <h3> {data[currentPage]?.title}</h3>
+                <Typography variant="h6" sx={{ flex: 1, textAlign: 'center' }}>
+                    {data?.title}
+                </Typography>
                 <IconButton onClick={handleCopy} aria-label="Copy code">
                     <FileCopyIcon />
                 </IconButton>
             </Box>
+
             <Box
                 sx={{
                     overflow: 'hidden',
@@ -178,8 +176,8 @@ const Content = () => {
                     borderRadius: 2,
                     backgroundColor: '#f5f5f5',
                     boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-                    height: '450px', // Set a fixed height
-                    overflowY: 'auto', // Allow vertical scrolling
+                    height: '450px',
+                    overflowY: 'auto',
                 }}
             >
                 <SyntaxHighlighter
@@ -191,61 +189,19 @@ const Content = () => {
                         wordWrap: 'break-word',
                     }}
                 >
-                    {data[currentPage]?.content}
+                    {data?.content} {/* Display the code content */}
                 </SyntaxHighlighter>
             </Box>
 
             <Typography variant="body1" color="textSecondary" sx={{ marginBottom: 2 }}>
-                Output: <strong>{data[currentPage]?.output}</strong>
+                Output: <strong>{data?.output}</strong> {/* Display the output */}
             </Typography>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between',  }}>
-                <Tooltip title="Previous page" arrow>
-                    <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={handlePrevPage}
-                        disabled={currentPage === 0}
-                        aria-label="Previous page"
-                        startIcon={<NavigateBeforeIcon />}
-                        sx={{
-                            flex: 1,
-                            marginRight: 1,
-                            '&:hover': {
-                                backgroundColor: '#e3f2fd',
-                            },
-                        }}
-                    >
-                        Previous
-                    </Button>
-                </Tooltip>
-                <Tooltip title="Next page" arrow>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleNextPage}
-                        disabled={currentPage === data.length - 1}
-                        aria-label="Next page"
-                        endIcon={<NavigateNextIcon />}
-                        sx={{
-                            flex: 1,
-                            marginLeft: 1,
-                            '&:hover': {
-                                backgroundColor: '#bbdefb',
-                            },
-                        }}
-                    >
-                        Next
-                    </Button>
-                </Tooltip>
-            </Box>
 
             <Snackbar
                 open={snackbarOpen}
                 autoHideDuration={3000}
                 onClose={handleSnackbarClose}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-                sx={{ backgroundColor: 'transparent' }}
             >
                 <Alert
                     onClose={handleSnackbarClose}
@@ -259,7 +215,6 @@ const Content = () => {
                 </Alert>
             </Snackbar>
 
-            {/* Confirmation Dialog */}
             <Dialog open={dialogOpen} onClose={handleDeleteClose}>
                 <DialogTitle>Confirm Deletion</DialogTitle>
                 <DialogContent>
@@ -276,18 +231,6 @@ const Content = () => {
             </Dialog>
         </Paper>
     );
-};
-
-// Prop validation
-Content.propTypes = {
-    bookData: PropTypes.arrayOf(
-        PropTypes.shape({
-            _id: PropTypes.string.isRequired,
-            title: PropTypes.string.isRequired,
-            content: PropTypes.string.isRequired,
-            output: PropTypes.string.isRequired,
-        })
-    ),
 };
 
 export default Content;

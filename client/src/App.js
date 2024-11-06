@@ -5,6 +5,7 @@ import Content from './components/content';
 import ContentForm from './components/form';
 import SearchAppBar from './components/header';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import List from './components/list';
 
 function App() {
     return (
@@ -12,10 +13,11 @@ function App() {
             <Router>
                 <SearchAppBar />
                 <Routes>
-                    <Route path="/" element={<Content />} /> {/* Default route to display Content */}
-                    <Route path="/add-notes" element={<ContentForm />} /> {/* Route for adding notes */}
+                    <Route path="/question" element={<Content />} />
+                    <Route path="/" element={<List />} />
+                    <Route path="/add-notes" element={<ContentForm />} />
                 </Routes>
-                <ToastContainer /> {/* Include the ToastContainer here if needed */}
+                <ToastContainer />
             </Router>
         </div>
     );
